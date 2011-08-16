@@ -1,11 +1,10 @@
 var fs = require('fs'),
-    spawn = require('child_process').spawn,
-    submit = require('./submit.js').submit;
+    cp = require('child_process'),
+    join = require('path').join;
 
 var tempPath   = '/home/matthew/cs/repos',
-    //Probably a much better place/way to create a random file name...
+    sourcePath = '/home/matthew/cs/gititin',
     randomName = 'repo-'+Math.round(100000*Math.random());
-
 try {
     process.chdir(tempPath);
 } catch (err){
@@ -14,21 +13,24 @@ try {
 }
 // Make the temporary repository. 
 require('fs').mkdir(randomName,'0777',function(){
-	spawn('git',['init',randomName,'--bare']).on('exit',function(){
+	cp.spawn('git',['init',randomName,'--bare']).on('exit',function(){
 		// Once that's done, invoke 'git receive-pack <new repo>'
-		var receive = spawn('git',['receive-pack',randomName]);
+		var receive = cp.spawn('git',['receive-pack',randomName]);
 		// Route stdout,stdin,stderr to/from git receive-pack
-		var stdin = process.openStdin(),
-		    link = function (src,dest){ 
-		    src.on('data',function(d){dest.write(d)});
-		};
-		link(receive.stdout,process.stdout);
-		link(receive.stderr,process.stderr);
-		link(stdin,receive.stdin);
-		stdin.on('end',function(){receive.stdin.end();});
+		process.stdin.resume();
+		receive.stdout.pipe(process.stdout);
+		receive.stderr.pipe(process.stderr);
+		process.stdin.pipe(receive.stdin);
+		
 		receive.on('exit',function(){
-			//After this point, stdout can't be written to.
-			submit(randomName);
+			// Once the real git receive-pack has terminated, the replacement probably should.
+			// However, there's still work to do, so we fork a child, which daemonizes itself once it's got the data.
+			var sub = cp.fork(join(sourcePath, 'submit.js'));
+			sub.on('message',function(){//Once the child is ready, it signals, and we die
+				process.exit(0);
+			    });
+			// Send the relevant data.
+			sub.send({workingDir:tempPath,repo: randomName, sourceDir:sourcePath});
 		    });
 	    });
     });
