@@ -26,10 +26,15 @@ The calling process is the leader of the new session, the process group leader o
 Handle<Value> _setsid(const Arguments &_){
   return Integer::New((int) setsid());
 }
+
+Handle<Value> _fork(const Arguments &_){
+  return Integer::New((int) fork());
+}
+
 // Define the library - rather simple, in this case.
 extern "C" void init(Handle<Object> target) {
   HandleScope scope;
   target->Set(String::New("usernameById"), FunctionTemplate::New(usernameById)->GetFunction());
   target->Set(String::New("setsid"), FunctionTemplate::New(_setsid)->GetFunction());
+  target->Set(String::New("fork"), FunctionTemplate::New(_fork)->GetFunction());
 }
-

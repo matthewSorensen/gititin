@@ -1,7 +1,7 @@
 var fs = require('fs'),
     cp = require('child_process'),
-    join = require('path').join;
-
+    join = require('path').join,
+    nat = require('nativeUtils');
 var tempPath   = '/home/matthew/cs/repos',
     sourcePath = '/home/matthew/cs/gititin',
     randomName = 'repo-'+Math.round(100000*Math.random());
@@ -25,12 +25,36 @@ require('fs').mkdir(randomName,'0777',function(){
 		receive.on('exit',function(){
 			// Once the real git receive-pack has terminated, the replacement probably should.
 			// However, there's still work to do, so we fork a child, which daemonizes itself once it's got the data.
-			var sub = cp.fork(join(sourcePath, 'submit.js'));
-			sub.on('message',function(){//Once the child is ready, it signals, and we die
+			fork(function(){
 				process.exit(0);
+			    },function(){
+				var opts = {workingDir: tempPath, 
+					    repo: randomName, 
+					    sourceDir: sourcePath,
+					    user: nat.usernameById(process.getuid())
+				};
+				daemonize();
+				require(join(sourcePath,'submit.js')).submit(opts);
 			    });
-			// Send the relevant data.
-			sub.send({workingDir:tempPath,repo: randomName, sourceDir:sourcePath});
 		    });
 	    });
     });
+function fork(parent,child){
+    var pid = nat.fork();
+    if(pid == 0){
+	child();
+    }else if(pid < 0){
+	console.error('Failed to fork');
+	process.exit(1);
+    }else{
+	parent();
+    }
+}
+// Detatch std{in,out,err}, chdir, umask, then start a new process group.                                                                                  
+function daemonize(dir){
+    process.stdin.destroy();
+    process.stdout.end();
+    process.stderr.end();
+    process.umask('0111');//This is absolutely needed, but shouldn't be...
+    return nat.setsid();
+}
