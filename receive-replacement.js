@@ -1,31 +1,26 @@
 #!/usr/local/bin/node
 
-var tempPath   = '/tmp',
-    sourcePath = '/home/matthew/cs/gititin';
+var config = require('/home/matthew/cs/gititin/config.js');
 
-var fs = require('fs'),
-    join = require('path').join,
-    spawn = require(join(sourcePath,'spawn.js')),
+var join = require('path').join,
+    spawn = require(join(config.dirs.src,'spawn.js')),
     nat = require('nativeUtils');
 
 try {
-    process.chdir(tempPath);
+    process.chdir(config.dirs.tmp);
 } catch (err){
     console.error("gititin internal error: failed to set pwd");
     process.exit(1);
 }
-// Info that might be relevant in the {future} email module.
-var email = {workingDir: tempPath,
-	     sourcePath: sourcePath,
-	     repo: undefined,
-	     user: nat.usernameById(process.getuid()).replace(/\s|[^A-Za-z0-9]/,'')},
-    time = new Date();
-email.repo = [email.user, time.getMonth()+1, time.getDate(), time.getYear()].join('-');
-// Make the temporary repository. 
-require('fs').mkdir(email.repo,'0777',function(){
-	spawn.spawn('git',['init','--template='+join(sourcePath,'template-repo'),email.repo],function(){
+
+var user = nat.usernameById(process.getuid()),
+    time = new Date(),
+    repo = [user.replace(/\s|[^A-Za-z0-9]/,''), time.getMonth()+1, time.getDate(), time.getYear()].join('-');
+
+require('fs').mkdir(repo,'0777',function(){
+	spawn.spawn('git',['init','--template='+config.dirs.template,repo],function(){
 		// Once that's done, invoke 'git receive-pack <new repo>'
-		var receive = spawn.old_spawn('git',['receive-pack',email.repo]);
+		var receive = spawn.old_spawn('git',['receive-pack',repo]);
 		// Route stdout,stdin,stderr to/from git receive-pack
 		process.stdin.resume();
 		receive.stdout.pipe(process.stdout);
@@ -38,8 +33,8 @@ require('fs').mkdir(email.repo,'0777',function(){
 				process.exit(0);
 			    },function(){
 				daemonize();
-				spawn.spawn('tar',['-zcvf',email.repo+'.tar.gz',email.repo],function(){
-					spawn.spawn('rm',['-rf',email.repo],function(){
+				spawn.spawn('tar',['-zcvf',repo+'.tar.gz',repo],function(){
+					spawn.spawn('rm',['-rf',repo],function(){
 						//The farthest flung point of control flow!
 					    });
 				    });
