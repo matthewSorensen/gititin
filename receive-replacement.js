@@ -1,3 +1,4 @@
+#!/usr/local/bin/node
 var tempPath   = '/tmp',
     sourcePath = '/home/matthew/cs/gititin',
     randomName = 'repo-'+Math.round(100000*Math.random());
@@ -11,15 +12,6 @@ try {
     console.error("gititin internal error: failed to set pwd");
     process.exit(1);
 }
-// Set an error handler for spawned processes:
-spawn.setError(function(e){
-	console.error(['gititin internal error:',
-		       'process "',e.proc,
-		       '" terminated with code ',e.code,
-		       ' and error "',e.err,'"' 
-		       ].join(''));
-	process.exit(1);
-    });
 // Make the temporary repository. 
 require('fs').mkdir(randomName,'0777',function(){
 	spawn.spawn('git',['init',randomName,'--bare'],function(){

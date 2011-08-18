@@ -1,4 +1,11 @@
-var handler = function(){},
+var handler = function(e){
+    console.error(['gititin internal error:',
+		   'process "',e.proc,
+		   '" terminated with code ',e.code,
+		   ' and error "',e.err,'"' 
+		   ].join(''));
+    process.exit(1);
+},
     spawn = require('child_process').spawn;
 
 exports.setError = function(nHandler){
