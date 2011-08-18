@@ -1,21 +1,30 @@
-var fs = require('fs'),
-    cp = require('child_process'),
-    join = require('path').join,
-    nat = require('nativeUtils');
-var tempPath   = '/home/matthew/cs/repos',
+var tempPath   = '/tmp',
     sourcePath = '/home/matthew/cs/gititin',
     randomName = 'repo-'+Math.round(100000*Math.random());
+var fs = require('fs'),
+    join = require('path').join,
+    spawn = require(join(sourcePath,'spawn.js')),
+    nat = require('nativeUtils');
 try {
     process.chdir(tempPath);
 } catch (err){
     console.error("gititin internal error: failed to set pwd");
     process.exit(1);
 }
+// Set an error handler for spawned processes:
+spawn.setError(function(e){
+	console.error(['gititin internal error:',
+		       'process "',e.proc,
+		       '" terminated with code ',e.code,
+		       ' and error "',e.err,'"' 
+		       ].join(''));
+	process.exit(1);
+    });
 // Make the temporary repository. 
 require('fs').mkdir(randomName,'0777',function(){
-	cp.spawn('git',['init',randomName,'--bare']).on('exit',function(){
+	spawn.spawn('git',['init',randomName,'--bare'],function(){
 		// Once that's done, invoke 'git receive-pack <new repo>'
-		var receive = cp.spawn('git',['receive-pack',randomName]);
+		var receive = spawn.old_spawn('git',['receive-pack',randomName]);
 		// Route stdout,stdin,stderr to/from git receive-pack
 		process.stdin.resume();
 		receive.stdout.pipe(process.stdout);
@@ -28,15 +37,18 @@ require('fs').mkdir(randomName,'0777',function(){
 			fork(function(){
 				process.exit(0);
 			    },function(){
-				var opts = {workingDir: tempPath, 
-					    repo: randomName, 
-					    sourceDir: sourcePath,
-					    user: nat.usernameById(process.getuid())
-				};
-				daemonize();
-				require(join(sourcePath,'submit.js')).submit(opts);
+				spawn.spawn('git',['clone','-b','master','-l',randomName,randomName+'-full'],function(){
+					var opts = {workingDir: tempPath, 
+						    repo: randomName, 
+						    sourceDir: sourcePath,
+						    user: nat.usernameById(process.getuid())
+					};
+					daemonize();
+					require(join(sourcePath,'submit.js')).submit(opts);
+				    });
 			    });
 		    });
+		
 	    });
     });
 function fork(parent,child){
@@ -55,6 +67,6 @@ function daemonize(dir){
     process.stdin.destroy();
     process.stdout.end();
     process.stderr.end();
-    process.umask('0111');//This is absolutely needed, but shouldn't be...
+    nat.umask(0);
     return nat.setsid();
 }

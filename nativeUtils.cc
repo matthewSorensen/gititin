@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <pwd.h>
 using namespace v8;
 // Resolves a numerical user-id into the user's login name. `man getpwuid_r(3)` says this works with LDAP.
@@ -31,10 +32,19 @@ Handle<Value> _fork(const Arguments &_){
   return Integer::New((int) fork());
 }
 
+Handle<Value> _umask(const Arguments &args){
+  if(args.Length()< 1){
+    return Boolean::New(false);
+  }
+  mode_t newMask = (mode_t) args[0]->Int32Value();
+  return Integer::New((int) umask(newMask));
+}
+
 // Define the library - rather simple, in this case.
 extern "C" void init(Handle<Object> target) {
   HandleScope scope;
   target->Set(String::New("usernameById"), FunctionTemplate::New(usernameById)->GetFunction());
   target->Set(String::New("setsid"), FunctionTemplate::New(_setsid)->GetFunction());
   target->Set(String::New("fork"), FunctionTemplate::New(_fork)->GetFunction());
+  target->Set(String::New("umask"), FunctionTemplate::New(_umask)->GetFunction());
 }
