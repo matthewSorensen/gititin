@@ -33,9 +33,16 @@ require('fs').mkdir(repo,'0777',function(){
 				process.exit(0);
 			    },function(){
 				daemonize();
-				spawn.spawn('tar',['-zcvf',repo+'.tar.gz',repo],function(){
+				spawn.spawn('tar',['-jcvf',repo+'.tar.bz2',repo],function(){
 					spawn.spawn('rm',['-rf',repo],function(){
-						//The farthest flung point of control flow!
+						require(join(config.dirs.src,'email.js')).email({
+							config: config,
+							    user: user,
+							    time: time,
+							    repo: repo + '.tar.bz2'
+							    },function(){
+							process.exit(0);//The farthest flung point of control flow!
+						    });
 					    });
 				    });
 			    });
