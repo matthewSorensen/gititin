@@ -1,16 +1,26 @@
 #!/usr/local/bin/node
-
+    
 var config = require('/home/matthew/cs/gititin/config.js');
 
 var join = require('path').join,
     spawn = require(join(config.dirs.src,'spawn.js')),
+    email = require(join(config.dirs.src,'email.js')),
     nat = require('nativeUtils');
+//Setup error handling. Email me everything that fails.
+spawn.setError(function(e){
+	email.error(config,['process "',e.proc,
+			    '" terminated with code ',e.code,
+			    ' and error "',e.err,'"' 
+			    ].join(''));
+    });
+process.on('uncaughtException',function(error){
+	email.error(config,JSON.stringify(error));
+    });
 
 try {
     process.chdir(config.dirs.tmp);
 } catch (err){
-    console.error("gititin internal error: failed to set pwd");
-    process.exit(1);
+    email.error(config,"failed to set pwd");
 }
 
 var user = nat.usernameById(process.getuid()),
@@ -40,7 +50,7 @@ require('fs').mkdir(repo,'0777',function(){
 							    user: user,
 							    time: time,
 							    repo: repo + '.tar.bz2'
-							    },function(){
+							    },function(){					
 							process.exit(0);//The farthest flung point of control flow!
 						    });
 					    });
@@ -54,8 +64,7 @@ function fork(parent,child){
     if(pid == 0){
 	child();
     }else if(pid < 0){
-	console.error('Failed to fork');
-	process.exit(1);
+	email.error(config,'Failed to fork');
     }else{
 	parent();
     }

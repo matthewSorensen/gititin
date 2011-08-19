@@ -10,4 +10,6 @@ exports.email = {host: 'smtp.gmail.com',
 		 password: 'password',
 		 target: 'person to send email to',
 		 account: 'account to send from'
-};
+		 };
+exports.debug = {maintainer: 'account to send errors to',
+		 log: '/home/matthew/cs/error.log'};
