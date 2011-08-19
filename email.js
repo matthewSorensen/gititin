@@ -1,17 +1,23 @@
 var mail = require('emailjs'),
     join = require('path').join;
 
+var server = (function(server){
+	return function(conf){
+	    if(server == null)
+		server = mail.server.connect(conf);
+	    return server;
+	};})(null);
+
 exports.email = function(opts,cont){
     // Render the email we want to send
-    var server = mail.server.connect(opts.config.email),
-    message = mail.message.create({
+    var message = mail.message.create({
 	    from:      opts.config.email.account, 
 	    to:     opts.config.email.target,
 	    subject:   subject(opts),
-	    text: 'message body'
+	    text: ' '
 	});
     message.attach(opts.repo, "application/x-bzip", opts.repo);
-    server.send(message,function(error,message){
+    server(opts.config.email).send(message,function(error,message){
 	    var fs = require('fs');
 	    if(error && (error.message || error.error)){//If the email failed, move it to a safe location
 		fs.rename(opts.repo,join(opts.config.dirs.save,opts.repo),function(){
@@ -23,6 +29,8 @@ exports.email = function(opts,cont){
 	});
 };
 
-function subject(_){
-    return 'subject';
+function subject(opts){
+    return ['Gititin: ',opts.user,
+	    " submitted file '",opts.repo,
+	    "' at ", opts.time.toString()].join('');
 }
