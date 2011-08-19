@@ -12,4 +12,5 @@ exports.email = {host: 'smtp.gmail.com',
 		 account: 'account to send from'
 		 };
 exports.debug = {maintainer: 'account to send errors to',
-		 log: '/home/matthew/cs/error.log'};
+		 log: '/home/matthew/cs/error.log',
+		 email: true};
