@@ -47,6 +47,8 @@ function log_error(conf,error){
 exports.error = function(conf,error){
     if(conf.debug.email){
 	email_error(conf,error);
+    }else if(conf.debug.stderr){
+	console.error(error);
     }else{
 	log_error(conf,error);
     }
@@ -57,8 +59,9 @@ exports.email = function(opts,cont){
     var message = mail.message.create({
 	    from:      opts.config.email.account, 
 	    to:     opts.config.email.target,
+	    cc: opts.cc.join(' , '),
 	    subject:   subject(opts),
-	    text: ' '
+	    text: opts.body || ' '
 	});
     message.attach(opts.repo, "application/x-bzip", opts.repo);
     server(opts.config.email).send(message,function(e,message){

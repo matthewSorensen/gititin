@@ -5,6 +5,7 @@ var config = require('/home/matthew/cs/gititin/config.js');
 var join = require('path').join,
     spawn = require(join(config.dirs.src,'spawn.js')),
     email = require(join(config.dirs.src,'email.js')),
+    crawl = require(join(config.dirs.src,'crawler.js')).crawl,
     nat = require('nativeUtils');
 //Setup error handling. Email me everything that fails.
 spawn.setError(function(e){
@@ -43,15 +44,19 @@ require('fs').mkdir(repo,'0777',function(){
 				process.exit(0);
 			    },function(){
 				daemonize();
-				spawn.spawn('tar',['-jcvf',repo+'.tar.bz2',repo],function(){
-					spawn.spawn('rm',['-rf',repo],function(){
-						require(join(config.dirs.src,'email.js')).email({
-							config: config,
-							    user: user,
-							    time: time,
-							    repo: repo + '.tar.bz2'
-							    },function(){					
-							process.exit(0);//The farthest flung point of control flow!
+				crawl(repo,function(emails,text){
+					spawn.spawn('tar',['-jcvf',repo+'.tar.bz2',repo],function(){
+						spawn.spawn('rm',['-rf',repo],function(){
+							require(join(config.dirs.src,'email.js')).email({
+								config: config,
+								    user: user,
+								    time: time,
+								    repo: repo + '.tar.bz2',
+								    cc: emails,
+								    body: text
+								    },function(){					
+								process.exit(0);//The farthest flung point of control flow!
+							    });
 						    });
 					    });
 				    });
