@@ -1,4 +1,4 @@
-#!/usr/local/bin/node
+#!/usr/bin/env node
     
 var config = require('/home/matthew/cs/gititin/config.js');
 
