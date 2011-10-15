@@ -1,0 +1,1 @@
+Don't try to build/get this to work on your machine. No documentation, hardcoded paths, and  other annoying issues. Cool code, however - emulates git recive-pack to email the pushed repository to all committers, as well as a designated target.
